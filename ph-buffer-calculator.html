@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>pH & Buffer Calculator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#EEF3F5;--panel:#fff;--ink:#12212B;--muted:#56697A;--line:#CBD6DD;--accent:#0E7C86;--accent-ink:#fff;--warn:#9A5B00;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1519;--panel:#142027;--ink:#E6EEF2;--muted:#93A6B3;--line:#263842;--accent:#4FC3CC;--accent-ink:#06181B;--warn:#F0B35A}}
+:root[data-theme="dark"]{--bg:#0D1519;--panel:#142027;--ink:#E6EEF2;--muted:#93A6B3;--line:#263842;--accent:#4FC3CC;--accent-ink:#06181B;--warn:#F0B35A}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:28px 18px 48px}
+h1{font:700 clamp(26px,5vw,38px)/1.1 "Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;margin:0 0 6px;letter-spacing:-.01em}
+.sub{margin:0 0 22px;color:var(--muted);max-width:60ch}
+.hero{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 24px 18px;margin-bottom:18px}
+.top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+#phv{font:700 clamp(64px,16vw,116px)/1 "Bricolage Grotesque","Instrument Sans",system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.unit{font-size:22px;color:var(--muted);font-weight:500}
+#verdict{margin:0 0 0 auto;font-weight:600;font-size:18px}
+.bar{position:relative;height:22px;border-radius:11px;margin-top:14px;background:linear-gradient(90deg,#c1121f 0%,#e85d04 20%,#f4a300 33%,#e9d51f 40%,#7bc043 50%,#1fa99b 62%,#2a6fdb 78%,#5b3fc4 100%)}
+#mk{position:absolute;top:-6px;width:6px;height:34px;border-radius:3px;background:var(--ink);border:2px solid var(--panel);transform:translateX(-50%);left:50%;transition:left .4s ease,opacity .2s}
+.ticks{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:740px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+.card h2{font-size:16px;margin:0 0 12px}
+.seg{display:flex;gap:4px;padding:4px;background:var(--bg);border-radius:12px;margin-bottom:16px}
+.seg button{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:9px 6px;border-radius:9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 0 0 1px var(--line)}
+label{display:block;font-size:14px;font-weight:500;margin:12px 0 4px}
+input,select{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+input[type=range]{padding:0;accent-color:var(--accent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hide{display:none}
+dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:9px 16px}
+dt{color:var(--muted)}
+dd{margin:0;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.note{margin:14px 0 0;color:var(--muted);font-size:14px}
+.note.w{color:var(--warn);font-weight:500}
+.btn{margin-top:12px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
+.out{margin:10px 0 0;font-size:15px}
+.help{margin-top:16px;border-top:1px solid var(--line);padding-top:6px}
+@media(prefers-reduced-motion:reduce){#mk{transition:none}}
+</style>
+</head>
+<body>
+<main>
+<h1>pH &amp; buffer calculator</h1>
+<p class="sub">Strong and weak acids and bases, plus Henderson–Hasselbalch buffers. Assumes 25 °C and ideal solutions.</p>
+
+<section class="hero" aria-live="polite">
+  <div class="top"><span id="phv">7.00</span><span class="unit">pH</span><p id="verdict"></p></div>
+  <div class="bar"><i id="mk"></i></div>
+  <div class="ticks"><span>0 acidic</span><span>7</span><span>14 basic</span></div>
+</section>
+
+<div class="grid">
+  <section class="card">
+    <h2>Inputs</h2>
+    <div class="seg" id="seg">
+      <button data-m="strong" aria-pressed="true">Strong</button>
+      <button data-m="weak" aria-pressed="false">Weak</button>
+      <button data-m="buffer" aria-pressed="false">Buffer</button>
+    </div>
+
+    <div id="p-simple">
+      <label for="side">Solute</label>
+      <select id="side"><option value="acid">Acid</option><option value="base">Base</option></select>
+      <div id="weakbox" class="hide">
+        <label for="preset">Common examples</label>
+        <select id="preset"></select>
+        <label for="pk" id="pklabel">pKa</label>
+        <input id="pk" type="number" step="0.01" value="4.76">
+      </div>
+      <label for="conc">Concentration (mol/L)</label>
+      <input id="conc" type="number" step="any" min="0" value="0.01">
+    </div>
+
+    <div id="p-buffer" class="hide">
+      <label for="bpreset">Buffer system</label>
+      <select id="bpreset"></select>
+      <label for="bpk">pKa of the weak acid</label>
+      <input id="bpk" type="number" step="0.01" value="4.76">
+      <div class="two">
+        <div><label for="cHA">[HA] (mol/L)</label><input id="cHA" type="number" step="any" min="0" value="0.10"></div>
+        <div><label for="cA">[A⁻] (mol/L)</label><input id="cA" type="number" step="any" min="0" value="0.10"></div>
+      </div>
+      <label for="vol">Volume (mL)</label>
+      <input id="vol" type="number" step="any" min="0" value="100">
+      <label for="add" id="addlabel">Add strong acid or base</label>
+      <input id="add" type="range" min="-125" max="125" step="1" value="0">
+      <div class="help">
+        <label for="tph">Design a buffer: target pH</label>
+        <div class="two">
+          <input id="tph" type="number" step="0.01" value="4.50" aria-label="Target pH">
+          <input id="tc" type="number" step="any" min="0" value="0.20" aria-label="Total concentration in mol/L">
+        </div>
+        <p class="out" id="tout"></p>
+        <button class="btn" id="load" type="button">Use these amounts</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Results</h2>
+    <dl id="rows"></dl>
+    <p class="note" id="method"></p>
+    <p class="note w" id="warn"></p>
+  </section>
+</div>
+</main>
+
+<script>
+const Kw = 1e-14, $ = id => document.getElementById(id), lg = Math.log10;
+let mode = 'strong';
+
+const WEAK = {
+  acid: [['Acetic acid', 4.76], ['Formic acid', 3.75], ['Hydrofluoric acid', 3.17], ['Benzoic acid', 4.20], ['Hypochlorous acid', 7.53], ['Ammonium ion', 9.25]],
+  base: [['Ammonia', 4.75], ['Methylamine', 3.36], ['Pyridine', 8.77], ['Aniline', 9.37]]
+};
+const BUF = [['Acetate', 4.76], ['Formate', 3.75], ['Carbonic acid / bicarbonate', 6.35], ['Phosphate (H₂PO₄⁻ / HPO₄²⁻)', 7.21], ['Tris', 8.07], ['Ammonium / ammonia', 9.25]];
+
+function fill(sel, list) {
+  sel.innerHTML = list.map((p, i) => `<option value="${i}">${p[0]} (${p[1]})</option>`).join('') + '<option value="c">Custom</option>';
+}
+const sci = x => {
+  if (!isFinite(x)) return '—';
+  if (x === 0) return '0';
+  if (x >= 0.001 && x < 1000) return String(+x.toPrecision(3));
+  const [m, e] = x.toExponential(2).split('e');
+  return m + ' × 10<sup>' + e.replace('-', '−').replace('+', '') + '</sup>';
+};
+const f2 = x => isFinite(x) ? x.toFixed(2) : '—';
+
+// Exact solutions that keep water's autoionization
+const strong = C => (C + Math.sqrt(C * C + 4 * Kw)) / 2;
+function weak(K, C) {                       // charge balance: h = K·C/(K+h) + Kw/h
+  let lo = -16, hi = 1;
+  for (let i = 0; i < 90; i++) {
+    const m = (lo + hi) / 2, h = 10 ** m;
+    (h - K * C / (K + h) - Kw / h > 0) ? hi = m : lo = m;
+  }
+  return 10 ** ((lo + hi) / 2);
+}
+function pHOfStrong(side, C) { const x = strong(C); return side === 'acid' ? -lg(x) : 14 + lg(x); }
+
+function simple() {
+  const side = $('side').value, C = parseFloat($('conc').value);
+  if (!(C > 0)) return { err: 'Enter a concentration greater than 0.' };
+  let h, oh, frac = null, method, pk = parseFloat($('pk').value);
+  if (mode === 'strong') {
+    if (side === 'acid') { h = strong(C); oh = Kw / h; } else { oh = strong(C); h = Kw / oh; }
+    method = 'Fully dissociated, so the ion concentration equals C. Water\u2019s own contribution is included, which matters below about 10\u207B\u2076 M.';
+  } else {
+    if (!isFinite(pk)) return { err: 'Enter a pK value.' };
+    const K = 10 ** -pk;
+    if (side === 'acid') { h = weak(K, C); oh = Kw / h; frac = K / (K + h); }
+    else { oh = weak(K, C); h = Kw / oh; frac = K / (K + oh); }
+    const approx = side === 'acid' ? 0.5 * (pk - lg(C)) : 14 - 0.5 * (pk - lg(C));
+    method = `Solved the charge balance exactly. The usual shortcut ½(pK − log C) gives pH ${f2(approx)}.`;
+  }
+  const rows = [['pH', f2(-lg(h))], ['pOH', f2(-lg(oh))], ['[H⁺] (mol/L)', sci(h)], ['[OH⁻] (mol/L)', sci(oh)]];
+  if (frac !== null) rows.push([side === 'acid' ? '% ionized' : '% protonated', sci(frac * 100)]);
+  const warn = C > 0.5 ? 'Above about 0.1 M, activity effects make real pH differ from this ideal value.' : '';
+  return { pH: -lg(h), rows, method, warn };
+}
+
+function buffer() {
+  const pka = parseFloat($('bpk').value), cHA = parseFloat($('cHA').value), cA = parseFloat($('cA').value), V = parseFloat($('vol').value);
+  const p = +$('add').value;
+  if (!(cHA > 0 && cA > 0)) return { err: 'Enter [HA] and [A⁻] above 0 to make a buffer.' };
+  if (!(V > 0) || !isFinite(pka)) return { err: 'Enter a pKa and a volume above 0.' };
+  const nHA = cHA * V, nA = cA * V;                 // mmol
+  const x = p >= 0 ? p / 100 * nA : p / 100 * nHA;  // + acid, − base (mmol)
+  $('addlabel').textContent = x === 0 ? 'Add strong acid or base: none'
+    : `Add strong ${x > 0 ? 'acid' : 'base'}: ${Math.abs(x).toFixed(2)} mmol`;
+  const a = nHA + x, b = nA - x;
+  const pH0 = pka + lg(cA / cHA);
+  let pH, rows, method, warn = '';
+  if (a > 0 && b > 0) {
+    pH = pka + lg(b / a);
+    const beta = 2.303 * a * b / (V * (a + b));
+    rows = [['pH', f2(pH)], ['Change from start', (pH - pH0 >= 0 ? '+' : '') + f2(pH - pH0)], ['[A⁻]/[HA]', sci(b / a)],
+      ['[HA] (mol/L)', sci(a / V)], ['[A⁻] (mol/L)', sci(b / V)], ['Capacity β (mol/L per pH)', sci(beta)]];
+    method = 'pH = pKa + log([A⁻]/[HA]). Added strong acid converts A⁻ into HA; strong base does the reverse. Dilution from the added solution is ignored.';
+    if (b / a > 10 || b / a < 0.1) warn = 'The ratio is outside 0.1–10, so this is beyond the buffer\u2019s effective range (pKa ± 1).';
+  } else {
+    let side, C;
+    if (b <= 0) { side = 'acid'; C = -b / V; } else { side = 'base'; C = -a / V; }
+    if (C > 1e-12) { pH = pHOfStrong(side, C); method = `The added strong ${side} used up the buffer. The leftover strong ${side} sets the pH.`; }
+    else {
+      const K = side === 'acid' ? 10 ** -pka : Kw / 10 ** -pka, c0 = side === 'acid' ? a / V : b / V, h = weak(K, c0);
+      pH = side === 'acid' ? -lg(h) : 14 + lg(h);
+      method = `Exactly at the equivalence point, only the weak ${side === 'acid' ? 'acid' : 'conjugate base'} remains.`;
+    }
+    rows = [['pH', f2(pH)], ['Change from start', (pH - pH0 >= 0 ? '+' : '') + f2(pH - pH0)]];
+    warn = 'Buffer exhausted: one component is gone, so Henderson–Hasselbalch no longer applies.';
+  }
+  return { pH, rows, method, warn };
+}
+
+function design() {
+  const pka = parseFloat($('bpk').value), t = parseFloat($('tph').value), c = parseFloat($('tc').value);
+  if (!isFinite(pka) || !isFinite(t) || !(c > 0)) { $('tout').textContent = 'Enter a target pH and total concentration.'; return null; }
+  const r = 10 ** (t - pka), A = c * r / (1 + r), HA = c / (1 + r);
+  $('tout').innerHTML = `[A⁻]/[HA] = ${sci(r)} → [HA] ${sci(HA)} M, [A⁻] ${sci(A)} M`;
+  return { HA, A };
+}
+
+function update() {
+  const r = mode === 'buffer' ? buffer() : simple();
+  if (mode === 'buffer') design();
+  const ok = !r.err;
+  $('phv').textContent = ok ? f2(r.pH) : '—';
+  $('mk').style.opacity = ok ? 1 : 0;
+  if (ok) $('mk').style.left = Math.min(14, Math.max(0, r.pH)) / 14 * 100 + '%';
+  $('verdict').textContent = ok ? (r.pH < 6.95 ? 'Acidic' : r.pH > 7.05 ? 'Basic' : 'Neutral') : '';
+  $('rows').innerHTML = ok ? r.rows.map(x => `<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('') : '';
+  $('method').textContent = ok ? r.method : r.err;
+  $('warn').textContent = ok ? (r.warn || '') : '';
+}
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('#seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
+  $('p-simple').classList.toggle('hide', m === 'buffer');
+  $('p-buffer').classList.toggle('hide', m !== 'buffer');
+  $('weakbox').classList.toggle('hide', m !== 'weak');
+  update();
+}
+function weakList() {
+  const side = $('side').value;
+  fill($('preset'), WEAK[side]);
+  $('pklabel').textContent = side === 'acid' ? 'pKa' : 'pKb';
+  $('pk').value = WEAK[side][0][1];
+}
+
+document.querySelectorAll('#seg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.m)));
+$('side').addEventListener('change', () => { weakList(); update(); });
+$('preset').addEventListener('change', e => { if (e.target.value !== 'c') $('pk').value = WEAK[$('side').value][e.target.value][1]; update(); });
+$('pk').addEventListener('input', () => { $('preset').value = 'c'; update(); });
+$('bpreset').addEventListener('change', e => { if (e.target.value !== 'c') $('bpk').value = BUF[e.target.value][1]; update(); });
+$('bpk').addEventListener('input', () => { $('bpreset').value = 'c'; update(); });
+$('load').addEventListener('click', () => {
+  const d = design();
+  if (d) { $('cHA').value = +d.HA.toPrecision(4); $('cA').value = +d.A.toPrecision(4); $('add').value = 0; update(); }
+});
+['conc', 'cHA', 'cA', 'vol', 'add', 'tph', 'tc'].forEach(id => $(id).addEventListener('input', update));
+
+weakList();
+fill($('bpreset'), BUF);
+update();
+</script>
+</body>
+</html>
